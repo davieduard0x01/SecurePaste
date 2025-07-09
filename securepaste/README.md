@@ -1,12 +1,41 @@
-# React + Vite
+# SecurePaste 🔒
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Uma aplicação web segura para compartilhamento de texto, com criptografia ponta-a-ponta (end-to-end) realizada diretamente no navegador do cliente. O servidor apenas armazena um bloco de dados cifrado, sem nunca ter acesso ao conteúdo original ou à chave de decriptografia.
 
-Currently, two official plugins are available:
+**🚀 [Acesse a versão ao vivo aqui!](URL_DO_SEU_PROJETO_NA_VERCEL)**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+![Prévia do SecurePaste](URL_DE_UM_GIF_OU_SCREENSHOT_DO_PROJETO)
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 💡 Sobre o Projeto
+
+O SecurePaste foi desenvolvido para explorar e demonstrar a implementação de criptografia do lado do cliente usando a Web Crypto API nativa dos navegadores. O objetivo era criar uma solução de "pastebin" onde a privacidade do usuário é a prioridade máxima, garantindo que nem mesmo o administrador do serviço possa ler o conteúdo armazenado.
+
+## ✨ Funcionalidades Principais
+
+* **Criptografia End-to-End:** O texto é criptografado e descriptografado inteiramente no navegador do usuário.
+* **Segurança por Design:** A chave de decriptografia é parte do fragmento da URL (`#`), o que impede que ela seja enviada ao servidor.
+* **Backend Simples e Seguro:** Utiliza o Firebase Firestore apenas para armazenar o texto cifrado, sem lógica complexa no lado do servidor.
+* **Interface Limpa e Direta:** Foco na usabilidade para criar e compartilhar notas seguras rapidamente.
+
+## 🛠️ Tecnologias Utilizadas
+
+* **Front-End:** React, Vite
+* **Criptografia:** Web Crypto API (AES-GCM)
+* **Backend como Serviço:** Google Firebase (Firestore)
+* **Hospedagem:** Vercel
+
+## ⚙️ Como Executar Localmente
+
+```bash
+# Clone o repositório
+$ git clone [https://github.com/davieduard0x01/SecurePaste.git](https://github.com/davieduard0x01/SecurePaste.git)
+
+# Instale as dependências
+$ npm install
+
+# Crie um projeto no Firebase e configure suas chaves no arquivo src/App.jsx
+
+# Inicie o servidor
+$ npm run dev
