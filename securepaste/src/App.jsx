@@ -1,66 +1,58 @@
-// src/App.jsx
+// src/App.jsx - VERSÃO COMPLETA E FINAL COM FIREBASE
 
 import { useState, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
+
+// Importações do Firebase - necessárias para a conexão
+import { initializeApp } from "firebase/app";
+import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
+
 import './App.css';
 
-// --- Funções de Criptografia (Web Crypto API) ---
+// --- PASSO 1: COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE ---
+// Substitua este objeto de exemplo pelo que você copiou do site do Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDv5AFWesAy176MZmTikE9kVH05b7K39A0",
+  authDomain: "paste-lynx.firebaseapp.com",
+  projectId: "paste-lynx",
+  storageBucket: "paste-lynx.firebasestorage.app",
+  messagingSenderId: "956657491814",
+  appId: "1:956657491814:web:f53bf026394be2953c72a7",
+  measurementId: "G-NN1J3SRVNY"
+};
 
-// Gera uma chave de criptografia segura
+// ---------------------------------------------------------
+
+// Inicializa o Firebase e o Firestore
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+
+// --- Funções de Criptografia (Web Crypto API) - Nenhuma alteração aqui ---
 async function generateKey() {
-  const key = await window.crypto.subtle.generateKey(
-    { name: 'AES-GCM', length: 256 },
-    true,
-    ['encrypt', 'decrypt']
-  );
+  const key = await window.crypto.subtle.generateKey({ name: 'AES-GCM', length: 256 }, true, ['encrypt', 'decrypt']);
   const exportedKey = await window.crypto.subtle.exportKey('jwk', key);
-  return exportedKey.k; // Retorna a chave como uma string base64url
+  return exportedKey.k;
 }
 
-// Criptografa o texto
 async function encryptText(text, rawKey) {
-  const key = await window.crypto.subtle.importKey(
-    'jwk',
-    { kty: 'oct', k: rawKey, alg: 'A256GCM', ext: true },
-    { name: 'AES-GCM' },
-    false,
-    ['encrypt']
-  );
+  const key = await window.crypto.subtle.importKey('jwk', { kty: 'oct', k: rawKey, alg: 'A256GCM', ext: true }, { name: 'AES-GCM' }, false, ['encrypt']);
   const encodedText = new TextEncoder().encode(text);
-  const iv = window.crypto.getRandomValues(new Uint8Array(12)); // Vetor de inicialização
-  const ciphertext = await window.crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv: iv },
-    key,
-    encodedText
-  );
-
-  // Combina IV e texto cifrado para armazenamento
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv: iv }, key, encodedText);
   const combined = new Uint8Array(iv.length + ciphertext.byteLength);
   combined.set(iv, 0);
   combined.set(new Uint8Array(ciphertext), iv.length);
-
-  // Converte para Base64 para ser salvo como texto
   return btoa(String.fromCharCode.apply(null, combined));
 }
 
-// Descriptografa o texto
 async function decryptText(encryptedData, rawKey) {
   try {
-    const key = await window.crypto.subtle.importKey(
-      'jwk',
-      { kty: 'oct', k: rawKey, alg: 'A256GCM', ext: true },
-      { name: 'AES-GCM' },
-      false,
-      ['decrypt']
-    );
+    const key = await window.crypto.subtle.importKey('jwk', { kty: 'oct', k: rawKey, alg: 'A256GCM', ext: true }, { name: 'AES-GCM' }, false, ['decrypt']);
     const data = new Uint8Array(atob(encryptedData).split('').map(c => c.charCodeAt(0)));
     const iv = data.slice(0, 12);
     const ciphertext = data.slice(12);
-    const decrypted = await window.crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: iv },
-      key,
-      ciphertext
-    );
+    const decrypted = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, key, ciphertext);
     return new TextDecoder().decode(decrypted);
   } catch (error) {
     console.error("Falha na descriptografia:", error);
@@ -75,7 +67,6 @@ function App() {
   const [createdLink, setCreatedLink] = useState('');
   const hasRunRef = useRef(false);
 
-  // Efeito para ler o "paste" da URL na primeira vez que a página carrega
   useEffect(() => {
     if (hasRunRef.current) return;
     hasRunRef.current = true;
@@ -85,21 +76,27 @@ function App() {
       const [id, key] = hash.split(':');
       if (id && key) {
         setStatus('reading');
-        const encryptedText = localStorage.getItem(id); // Simula busca no "banco de dados"
-        if (encryptedText) {
-          decryptText(encryptedText, key).then(decryptedText => {
-            if (decryptedText) {
-              setText(decryptedText);
-              setStatus('idle');
-            } else {
-              setText('Erro: Não foi possível descriptografar este conteúdo. A chave pode estar incorreta ou os dados corrompidos.');
-              setStatus('error');
-            }
-          });
-        } else {
-          setText('Erro: Conteúdo não encontrado. Pode ter sido expirado ou o link está incorreto.');
-          setStatus('error');
-        }
+        
+        // --- LÓGICA ATUALIZADA: BUSCA NO FIREBASE ---
+        const docRef = doc(db, "pastes", id);
+        getDoc(docRef).then(docSnap => {
+          if (docSnap.exists()) {
+            const { encryptedText } = docSnap.data();
+            decryptText(encryptedText, key).then(decryptedText => {
+              if (decryptedText) {
+                setText(decryptedText);
+                setStatus('idle');
+              } else {
+                setText('Erro: Não foi possível descriptografar este conteúdo. A chave pode estar incorreta ou os dados corrompidos.');
+                setStatus('error');
+              }
+            });
+          } else {
+            setText('Erro: Conteúdo não encontrado. Pode ter sido expirado ou o link está incorreto.');
+            setStatus('error');
+          }
+        });
+        // ------------------------------------------
       }
     }
   }, []);
@@ -111,12 +108,12 @@ function App() {
     try {
       const key = await generateKey();
       const encryptedText = await encryptText(text, key);
-      const id = nanoid(10); // Gera um ID curto e único
+      const id = nanoid(10);
 
-      // --- SIMULAÇÃO DE BANCO DE DADOS ---
-      // Em um projeto real, aqui você enviaria { id, encryptedText } para o Firebase/Supabase
-      localStorage.setItem(id, encryptedText);
-      // ------------------------------------
+      // --- LÓGICA ATUALIZADA: SALVA NO FIREBASE ---
+      const docRef = doc(db, "pastes", id);
+      await setDoc(docRef, { encryptedText: encryptedText, createdAt: new Date() });
+      // ------------------------------------------
 
       const link = `${window.location.origin}${window.location.pathname}#${id}:${key}`;
       setCreatedLink(link);
@@ -128,25 +125,29 @@ function App() {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(createdLink);
-    alert('Link copiado para a área de transferência!');
+    navigator.clipboard.writeText(createdLink).then(() => {
+      alert('Link copiado para a área de transferência!');
+    }, () => {
+      alert('Falha ao copiar o link.');
+    });
   };
 
   const handleNew = () => {
     window.location.href = window.location.origin + window.location.pathname;
   }
 
+  // O JSX (parte visual) continua o mesmo do código anterior
   return (
     <div className="container">
       <header>
         <h1>SecurePaste 🔒</h1>
-        <p>Seus textos, criptografados no seu navegador. O servidor nunca vê o conteúdo.</p>
+        <p>Os seus textos, criptografados no seu navegador. O servidor nunca vê o conteúdo.</p>
       </header>
       
       {status === 'created' ? (
         <div className="result-view">
-          <h2>Seu link seguro foi criado!</h2>
-          <p>Compartilhe este link. Apenas quem o tiver poderá descriptografar o conteúdo.</p>
+          <h2>O seu link seguro foi criado!</h2>
+          <p>Partilhe este link. Apenas quem o tiver poderá descriptografar o conteúdo.</p>
           <div className="link-box">
             <input type="text" readOnly value={createdLink} />
             <button onClick={handleCopy}>Copiar</button>
@@ -158,11 +159,11 @@ function App() {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Cole seu texto aqui..."
+            placeholder="Cole o seu texto aqui..."
             disabled={status === 'reading' || status === 'creating' || status === 'error'}
           ></textarea>
           <button onClick={handleSave} disabled={!text || status === 'creating' || status === 'reading'}>
-            {status === 'creating' ? 'Criptografando...' : 'Criar Paste Seguro'}
+            {status === 'creating' ? 'A criptografar...' : 'Criar Paste Seguro'}
           </button>
         </div>
       )}
