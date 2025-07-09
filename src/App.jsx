@@ -1,26 +1,25 @@
-// src/App.jsx - VERSÃO COMPLETA E FINAL COM FIREBASE
+// src/App.jsx - VERSÃO SEGURA COM VARIÁVEIS DE AMBIENTE
 
 import { useState, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
 
-// Importações do Firebase - necessárias para a conexão
+// Importações do Firebase
 import { initializeApp } from "firebase/app";
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 
 import './App.css';
 
-// --- PASSO 1: COLE AQUI A CONFIGURAÇÃO DO SEU FIREBASE ---
-// Substitua este objeto de exemplo pelo que você copiou do site do Firebase
+// --- PASSO 1: Configuração Segura do Firebase ---
+// O código agora lê as chaves das Variáveis de Ambiente.
+// Elas começam com "VITE_" por uma exigência da ferramenta Vite.
 const firebaseConfig = {
-  apiKey: "AIzaSyDv5AFWesAy176MZmTikE9kVH05b7K39A0",
-  authDomain: "paste-lynx.firebaseapp.com",
-  projectId: "paste-lynx",
-  storageBucket: "paste-lynx.firebasestorage.app",
-  messagingSenderId: "956657491814",
-  appId: "1:956657491814:web:f53bf026394be2953c72a7",
-  measurementId: "G-NN1J3SRVNY"
+  apiKey: import.meta.env.VITE_API_KEY,
+  authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_APP_ID
 };
-
 // ---------------------------------------------------------
 
 // Inicializa o Firebase e o Firestore
@@ -77,7 +76,6 @@ function App() {
       if (id && key) {
         setStatus('reading');
         
-        // --- LÓGICA ATUALIZADA: BUSCA NO FIREBASE ---
         const docRef = doc(db, "pastes", id);
         getDoc(docRef).then(docSnap => {
           if (docSnap.exists()) {
@@ -96,7 +94,6 @@ function App() {
             setStatus('error');
           }
         });
-        // ------------------------------------------
       }
     }
   }, []);
@@ -110,10 +107,8 @@ function App() {
       const encryptedText = await encryptText(text, key);
       const id = nanoid(10);
 
-      // --- LÓGICA ATUALIZADA: SALVA NO FIREBASE ---
       const docRef = doc(db, "pastes", id);
       await setDoc(docRef, { encryptedText: encryptedText, createdAt: new Date() });
-      // ------------------------------------------
 
       const link = `${window.location.origin}${window.location.pathname}#${id}:${key}`;
       setCreatedLink(link);
@@ -136,7 +131,6 @@ function App() {
     window.location.href = window.location.origin + window.location.pathname;
   }
 
-  // O JSX (parte visual) continua o mesmo do código anterior
   return (
     <div className="container">
       <header>
